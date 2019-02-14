@@ -2,6 +2,12 @@
 
 Provides communication between iFrame and parent window (or web app) via postMessage
 
+## Install
+
+```shell
+npm i --save @osome/iframe-channel
+```
+
 ## Package API
 
 init channel:

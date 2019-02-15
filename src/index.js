@@ -47,6 +47,10 @@ class Channel {
     this.initData = queryString.parse(location.search);
   }
 
+  unsubscribe = () => {
+    window.removeEventListener('message', this._handleMessageParse)
+  }
+
   _transport = data =>
     this._peer.postMessage(JSON.stringify(data), '*') || true;
 

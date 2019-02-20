@@ -41,6 +41,16 @@ channel.onChatData(console.log);
 channel.onClose(console.log);
 channel.sendInitData();
 ```
+
+direct work with channel:
+
+```js
+window.channel.setTransport(callbackFn) // listen events
+
+window.channel.passMessage({event: 'initData', payload: {colorTheme: 'red'}}) // sendData
+```
+
+
 ## Channel API
 
 Channel sends data in stringified JSON:

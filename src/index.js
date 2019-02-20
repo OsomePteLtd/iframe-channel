@@ -1,19 +1,19 @@
-import queryString from 'query-string';
-import { window, location } from 'global';
+import queryString from "query-string";
+import { window, location } from "global";
 
-import { name, version } from '../package.json';
+import { name, version } from "../package.json";
 
-const INIT = 'init';
-const INIT_DATA = 'initData';
-const READY = 'ready';
-const SEND_TO_CHAT = 'sendToChat';
-const CLOSE_WIDGET = 'closeWebview';
+const INIT = "init";
+const INIT_DATA = "initData";
+const READY = "ready";
+const SEND_TO_CHAT = "sendToChat";
+const CLOSE_WIDGET = "closeWebview";
 
 const iframeWarn = () =>
-  console.warn('This event could be sent only from iframe');
+  console.warn("This event could be sent only from iframe");
 
 const parentWarn = () =>
-  console.warn('This event could be sent only from parent');
+  console.warn("This event could be sent only from parent");
 
 const eventErr = eventName => payload => {};
 
@@ -28,9 +28,9 @@ class Channel {
 
   _readyCb = () => {};
 
-  _dataCb = data => console.info('data', data);
+  _dataCb = data => console.info("data", data);
 
-  _closeCb = () => console.info('close');
+  _closeCb = () => console.info("close");
 
   initData = null;
 
@@ -38,27 +38,35 @@ class Channel {
     this._peer = peer;
     this._isWidget = isWidget;
 
-    window.addEventListener('message', this._handleMessageParse);
+    window.addEventListener("message", this._handleMessageParse);
     window.versions = window.versions || {};
     window.versions.channel = `${name}@${version} (${
-      this._isWidget ? 'widget' : 'parent'
+      this._isWidget ? "widget" : "parent"
     })`;
 
     this.initData = queryString.parse(location.search);
     this.sendInit();
+    window.channel = {
+      setTransport: this.setTransport,
+      passMessage: this.passMessage,
+    };
   }
 
   unsubscribe = () => {
-    window.removeEventListener('message', this._handleMessageParse)
-  }
+    window.removeEventListener("message", this._handleMessageParse);
+  };
 
   _transport = data =>
-    this._peer.postMessage(JSON.stringify(data), '*') || true;
+    this._peer.postMessage(JSON.stringify(data), "*") || true;
+
+  _overrideTransport = cb => {
+    this._transport = data => cb(data) || true;
+  };
 
   _handleMessageParse = event => {
     try {
       const data =
-        typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+        typeof event.data === "string" ? JSON.parse(event.data) : event.data;
       this._handleMessage({ data });
     } catch (err) {
       console.warn(err, event);
@@ -71,7 +79,7 @@ class Channel {
       [READY]: this._readyCb,
       [SEND_TO_CHAT]: this._dataCb,
       [CLOSE_WIDGET]: this._closeCb,
-      [INIT_DATA]: this._initDataCb,
+      [INIT_DATA]: this._initDataCb
     }[event] || eventErr(event))(payload));
 
   sendInit = () =>
@@ -137,6 +145,13 @@ class Channel {
       this._initDataCb(this.initData);
     }
   };
+
+  setTransport = cb => {
+    this._overrideTransport(cb);
+    this.sendInit();
+  };
+
+  passMessage = data => this._handleMessageParse({ data });
 }
 
 let widgetChannel;

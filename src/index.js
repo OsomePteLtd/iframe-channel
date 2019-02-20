@@ -60,7 +60,7 @@ class Channel {
     this._peer.postMessage(JSON.stringify(data), "*") || true;
 
   _overrideTransport = cb => {
-    this._transport = data => cb(data) || true;
+    this._transport = data => cb(JSON.stringify(data)) || true;
   };
 
   _handleMessageParse = event => {
@@ -138,8 +138,11 @@ class Channel {
       return;
     }
     this._initDataCb = payload => {
-      this.initData = payload;
-      cb(payload);
+      this.initData = {
+        ...this.initData,
+        ...payload,
+      };
+      cb(this.initData);
     };
     if (this.initData && !bypassOnInit) {
       this._initDataCb(this.initData);

@@ -45,6 +45,7 @@ class Channel {
     })`;
 
     this.initData = queryString.parse(location.search);
+    this.sendInit();
   }
 
   unsubscribe = () => {

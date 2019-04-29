@@ -7,6 +7,7 @@ const OLD_INIT = 'init';
 const OLD_INIT_DATA = 'initData';
 const OLD_READY = 'ready';
 const OLD_SEND_TO_CHAT = 'sendToChat';
+const OLD_SEND_TO_SHARE = 'sendToShare';
 const OLD_CLOSE_WIDGET = 'closeWebview';
 
 const deprecation = name =>
@@ -16,6 +17,7 @@ const INIT = '@osome/init';
 const INIT_DATA = '@osome/initData';
 const READY = '@osome/ready';
 const SEND_TO_CHAT = '@osome/sendToChat';
+const SEND_TO_SHARE = '@osome/sendToShare';
 const CLOSE_WIDGET = '@osome/closeWebview';
 
 const iframeWarn = () =>
@@ -38,6 +40,8 @@ class Channel {
   _readyCb = () => {};
 
   _dataCb = data => console.info('data', data);
+
+  _shareCb = data => console.info('share', data);
 
   _closeCb = () => console.info('close');
 
@@ -87,14 +91,17 @@ class Channel {
       [OLD_INIT]: this._initCb,
       [OLD_READY]: this._readyCb,
       [OLD_SEND_TO_CHAT]: this._dataCb,
+      [OLD_SEND_TO_SHARE]: this._shareCb,
       [OLD_CLOSE_WIDGET]: this._closeCb,
       [OLD_INIT_DATA]: this._initDataCb,
 
-      [INIT]: this._initCb,
-      [READY]: this._readyCb,
-      [SEND_TO_CHAT]: this._dataCb,
-      [CLOSE_WIDGET]: this._closeCb,
-      [INIT_DATA]: this._initDataCb,
+      // TODO: don't invoke events twice
+      // [INIT]: this._initCb,
+      // [READY]: this._readyCb,
+      // [SEND_TO_CHAT]: this._dataCb,
+      // [SEND_TO_SHARE]: this._shareCb,
+      // [CLOSE_WIDGET]: this._closeCb,
+      // [INIT_DATA]: this._initDataCb,
     }[event] || eventErr(event))(payload));
 
   sendInit = () =>
@@ -116,6 +123,16 @@ class Channel {
         event: OLD_SEND_TO_CHAT,
         payload,
         warning: deprecation(SEND_TO_CHAT),
+      })) ||
+    iframeWarn();
+
+  shareData = payload =>
+    (this._isWidget &&
+      this._transport({ event: SEND_TO_SHARE, payload }) &&
+      this._transport({
+        event: OLD_SEND_TO_SHARE,
+        payload,
+        warning: deprecation(SEND_TO_SHARE),
       })) ||
     iframeWarn();
 
@@ -160,6 +177,14 @@ class Channel {
       return;
     }
     this._dataCb = cb;
+  };
+
+  onShareData = cb => {
+    if (this._isWidget) {
+      iframeWarn();
+      return;
+    }
+    this._shareCb = cb;
   };
 
   onClose = cb => {

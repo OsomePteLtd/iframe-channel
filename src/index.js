@@ -1,19 +1,28 @@
-import queryString from "query-string";
-import { window, location } from "global";
+import queryString from 'query-string';
+import { window, location } from 'global';
 
-import { name, version } from "../package.json";
+import { name, version } from '../package.json';
 
-const INIT = "init";
-const INIT_DATA = "initData";
-const READY = "ready";
-const SEND_TO_CHAT = "sendToChat";
-const CLOSE_WIDGET = "closeWebview";
+const OLD_INIT = 'init';
+const OLD_INIT_DATA = 'initData';
+const OLD_READY = 'ready';
+const OLD_SEND_TO_CHAT = 'sendToChat';
+const OLD_CLOSE_WIDGET = 'closeWebview';
+
+const deprecation = name =>
+  `This event name is deprecated and likely will be removed in the future versions. Please use ${name} instead!`;
+
+const INIT = '@osome/init';
+const INIT_DATA = '@osome/initData';
+const READY = '@osome/ready';
+const SEND_TO_CHAT = '@osome/sendToChat';
+const CLOSE_WIDGET = '@osome/closeWebview';
 
 const iframeWarn = () =>
-  console.warn("This event could be sent only from iframe");
+  console.warn('This event could be sent only from iframe');
 
 const parentWarn = () =>
-  console.warn("This event could be sent only from parent");
+  console.warn('This event could be sent only from parent');
 
 const eventErr = eventName => payload => {};
 
@@ -28,9 +37,9 @@ class Channel {
 
   _readyCb = () => {};
 
-  _dataCb = data => console.info("data", data);
+  _dataCb = data => console.info('data', data);
 
-  _closeCb = () => console.info("close");
+  _closeCb = () => console.info('close');
 
   initData = null;
 
@@ -38,10 +47,10 @@ class Channel {
     this._peer = peer;
     this._isWidget = isWidget;
 
-    window.addEventListener("message", this._handleMessageParse);
+    window.addEventListener('message', this._handleMessageParse);
     window.versions = window.versions || {};
     window.versions.channel = `${name}@${version} (${
-      this._isWidget ? "widget" : "parent"
+      this._isWidget ? 'widget' : 'parent'
     })`;
 
     this.initData = queryString.parse(location.search);
@@ -53,11 +62,11 @@ class Channel {
   }
 
   unsubscribe = () => {
-    window.removeEventListener("message", this._handleMessageParse);
+    window.removeEventListener('message', this._handleMessageParse);
   };
 
   _transport = data =>
-    this._peer.postMessage(JSON.stringify(data), "*") || true;
+    this._peer.postMessage(JSON.stringify(data), '*') || true;
 
   _overrideTransport = cb => {
     this._transport = data => cb(JSON.stringify(data)) || true;
@@ -66,7 +75,7 @@ class Channel {
   _handleMessageParse = event => {
     try {
       const data =
-        typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
       this._handleMessage({ data });
     } catch (err) {
       console.warn(err, event);
@@ -75,29 +84,58 @@ class Channel {
 
   _handleMessage = ({ data: { event, payload } }) =>
     (({
+      [OLD_INIT]: this._initCb,
+      [OLD_READY]: this._readyCb,
+      [OLD_SEND_TO_CHAT]: this._dataCb,
+      [OLD_CLOSE_WIDGET]: this._closeCb,
+      [OLD_INIT_DATA]: this._initDataCb,
+
       [INIT]: this._initCb,
       [READY]: this._readyCb,
       [SEND_TO_CHAT]: this._dataCb,
       [CLOSE_WIDGET]: this._closeCb,
-      [INIT_DATA]: this._initDataCb
+      [INIT_DATA]: this._initDataCb,
     }[event] || eventErr(event))(payload));
 
   sendInit = () =>
-    (this._isWidget && this._transport({ event: INIT })) || iframeWarn();
+    (this._isWidget &&
+      this._transport({ event: INIT }) &&
+      this._transport({ event: OLD_INIT, warning: deprecation(INIT) })) ||
+    iframeWarn();
 
   sendReady = () =>
-    (this._isWidget && this._transport({ event: READY })) || iframeWarn();
+    (this._isWidget &&
+      this._transport({ event: READY }) &&
+      this._transport({ event: OLD_READY, warning: deprecation(READY) })) ||
+    iframeWarn();
 
   sendToChat = payload =>
-    (this._isWidget && this._transport({ event: SEND_TO_CHAT, payload })) ||
+    (this._isWidget &&
+      this._transport({ event: SEND_TO_CHAT, payload }) &&
+      this._transport({
+        event: OLD_SEND_TO_CHAT,
+        payload,
+        warning: deprecation(SEND_TO_CHAT),
+      })) ||
     iframeWarn();
 
   sendClose = () =>
-    (this._isWidget && this._transport({ event: CLOSE_WIDGET })) ||
+    (this._isWidget &&
+      this._transport({ event: CLOSE_WIDGET }) &&
+      this._transport({
+        event: OLD_CLOSE_WIDGET,
+        warning: deprecation(CLOSE_WIDGET),
+      })) ||
     iframeWarn();
 
   sendInitData = payload =>
-    (!this._isWidget && this._transport({ event: INIT_DATA, payload })) ||
+    (!this._isWidget &&
+      this._transport({ event: INIT_DATA, payload }) &&
+      this._transport({
+        event: OLD_INIT_DATA,
+        payload,
+        warning: deprecation(INIT_DATA),
+      })) ||
     parentWarn();
 
   onInit = cb => {

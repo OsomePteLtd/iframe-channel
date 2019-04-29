@@ -95,12 +95,13 @@ class Channel {
       [OLD_CLOSE_WIDGET]: this._closeCb,
       [OLD_INIT_DATA]: this._initDataCb,
 
-      [INIT]: this._initCb,
-      [READY]: this._readyCb,
-      [SEND_TO_CHAT]: this._dataCb,
-      [SEND_TO_SHARE]: this._shareCb,
-      [CLOSE_WIDGET]: this._closeCb,
-      [INIT_DATA]: this._initDataCb,
+      // TODO: don't invoke events twice
+      // [INIT]: this._initCb,
+      // [READY]: this._readyCb,
+      // [SEND_TO_CHAT]: this._dataCb,
+      // [SEND_TO_SHARE]: this._shareCb,
+      // [CLOSE_WIDGET]: this._closeCb,
+      // [INIT_DATA]: this._initDataCb,
     }[event] || eventErr(event))(payload));
 
   sendInit = () =>

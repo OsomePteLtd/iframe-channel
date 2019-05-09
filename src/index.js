@@ -58,7 +58,6 @@ class Channel {
     })`;
 
     this.initData = queryString.parse(location.search);
-    this.sendInit();
     window.channel = {
       setTransport: this.setTransport,
       passMessage: this.passMessage,

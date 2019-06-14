@@ -26,9 +26,27 @@ const iframeWarn = () =>
 const parentWarn = () =>
   console.warn('This event could be sent only from parent');
 
-const eventErr = eventName => payload => {};
-
 class Channel {
+  handlers = {};
+
+  on = (event, cb) => {
+    if (!this.handlers[event]) this.handlers[event] = [];
+    if (!this.handlers[event].includes(cb)) this.handlers[event].push(cb);
+  }
+
+  off = (event, cb) => {
+    const handlers = this.handlers[event];
+    if (!handlers) return;
+    const i = handlers.indexOf(cb);
+    if (i >= 0) handlers.splice(i, 1);
+  }
+
+  emit = (event, payload) => {
+    const handlers = this.handlers[event];
+    if (!handlers) return;
+    for (const cb of handlers) cb(payload);
+  }
+
   _peer = null;
 
   _isWidget = false;
@@ -85,8 +103,8 @@ class Channel {
     }
   };
 
-  _handleMessage = ({ data: { event, payload } }) =>
-    (({
+  _handleMessage = ({ data: { event, payload } }) => {
+    const handler = {
       [OLD_INIT]: this._initCb,
       [OLD_READY]: this._readyCb,
       [OLD_SEND_TO_CHAT]: this._dataCb,
@@ -101,7 +119,10 @@ class Channel {
       // [SEND_TO_SHARE]: this._shareCb,
       // [CLOSE_WIDGET]: this._closeCb,
       // [INIT_DATA]: this._initDataCb,
-    }[event] || eventErr(event))(payload));
+    }[event];
+    if (handler) return handler(payload);
+    return this.emit(event, payload);
+  }
 
   sendInit = () =>
     (this._isWidget &&
@@ -124,6 +145,11 @@ class Channel {
         warning: deprecation(SEND_TO_CHAT),
       })) ||
     iframeWarn();
+
+  sendEvent = (event, payload) =>
+    this._isWidget
+      ? this._transport({ event, payload })
+      : iframeWarn();
 
   shareData = payload =>
     (this._isWidget &&

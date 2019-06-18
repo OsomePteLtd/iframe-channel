@@ -147,9 +147,7 @@ class Channel {
     iframeWarn();
 
   sendEvent = (event, payload) =>
-    this._isWidget
-      ? this._transport({ event, payload })
-      : iframeWarn();
+    this._transport({ event, payload })
 
   shareData = payload =>
     (this._isWidget &&

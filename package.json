@@ -30,6 +30,6 @@
   },
   "dependencies": {
     "global": "^4.3.2",
-    "query-string": "^6.2.0"
+    "query-string": "^6.14.1"
   }
 }
